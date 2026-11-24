@@ -21,7 +21,28 @@ const $ = (s) => document.querySelector(s);
 // İpuçları: document.querySelectorAll(".tab"), forEach, classList.add / remove / toggle,
 //           addEventListener("click", ...)
 // ============================================================
+// Sekme geçişi: alttaki menüden bir butona basınca ilgili ekranı aç
+function openTab(isim) {
+  // 1) Bütün ekranları gizle, sadece seçileni göster
+  document.querySelectorAll(".tab").forEach(function (ekran) {
+    ekran.classList.toggle("active", ekran.id === "tab-" + isim);
+  });
 
+  // 2) Alttaki menüde seçili butonu yeşil yap
+  document.querySelectorAll(".tabbar button").forEach(function (buton) {
+    buton.classList.toggle("active", buton.dataset.tab === isim);
+  });
+
+  // 3) Sayfanın en üstüne kaydır
+  window.scrollTo(0, 0);
+}
+
+// Alttaki menüdeki her butona tıklanınca openTab çalışsın
+document.querySelectorAll(".tabbar button").forEach(function (buton) {
+  buton.addEventListener("click", function () {
+    openTab(buton.dataset.tab);
+  });
+});
 
 
 // ============================================================
@@ -30,4 +51,12 @@ const $ = (s) => document.querySelector(s);
 // #splashGo butonuna basınca #splash elemanına "fade" sınıfı ekle,
 // yarım saniye sonra (setTimeout) elemanı tamamen kaldır (.remove()).
 // ============================================================
+// Açılış ekranındaki butona tıklanınca ekranı kapat
+$("#splashGo").addEventListener("click", function () {
+  $("#splash").classList.add("fade");
+
+  setTimeout(function () {
+    $("#splash").remove();
+  }, 500);
+});
 
