@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#166534">
+<meta name="description" content="Yeşil Vatan: Birlikte fidan dik, büyüt, koru.">
+<title>Yeşil Vatan</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Açılış ekranı -->
+<div id="splash" class="splash">
+  <div class="splash-tree">🌳</div>
+  <h1>Yeşil Vatan</h1>
+  <blockquote>"Sen hayatında böyle bir ağaç yetiştirdin mi ki keseceksin?"</blockquote>
+  <cite>Mustafa Kemal Atatürk, Orman Çiftliği'nde<br><small>(Falih Rıfkı Atay'ın anlatımıyla)</small></cite>
+  <button id="splashGo" class="btn light">Birlikte yetiştirelim →</button>
+</div>
+
+<header class="topbar">
+  <div class="brand">🌳 Yeşil Vatan</div>
+  <div id="levelChip" class="chip"></div>
+</header>
+
+<main>
+  <!-- ANA -->
+  <section id="tab-home" class="tab active">
+    <div class="hero">
+      <div class="hero-num" id="statTrees">0</div>
+      <div class="hero-label">fidan topluluğumuzla birlikte dikildi</div>
+      <div class="hero-row">
+        <div><b id="statPeople">0</b><span>gönüllü</span></div>
+        <div><b id="statThirsty">0</b><span>su bekliyor</span></div>
+        <div><b id="statSaved">0</b><span>korunan ağaç</span></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="action" data-add="tree">🌱<span>Fidan dik</span></button>
+      <button class="action" data-go="thirsty">💧<span>Fidan sula</span></button>
+      <button class="action" data-add="event">📅<span>Etkinlik aç</span></button>
+      <button class="action" data-add="report">🪓<span>Ağacı koru</span></button>
+    </div>
+
+    <div class="card">
+      <h3>Yaklaşan dikim etkinlikleri</h3>
+      <div id="homeEvents" class="list"></div>
+    </div>
+
+    <div class="card story">
+      <h3>🏛️ Ulu Çınar'ın hikâyesi</h3>
+      <p>1930 yazında Yalova'daki köşkün yanındaki çınar ağacının dalı çatıya değiyordu. Çalışanlar dalı kesmek için izin istedi. Atatürk izin vermedi; dal kesilmedi, <b>köşk raylar üzerinde yaklaşık 4,8 metre kaydırıldı.</b> O günden beri adı <b>Yürüyen Köşk</b>. Çınar bugün hâlâ yaşıyor.</p>
+      <button class="btn ghost small" data-tab-link="profile">Tüm hikâyeler →</button>
+    </div>
+  </section>
+
+  <!-- HARİTA -->
+  <section id="tab-map" class="tab">
+    <div class="map-wrap">
+      <div id="map"></div>
+      <div id="crosshair" class="crosshair hidden">✚</div>
+    </div>
+    <div id="pickBar" class="pickbar hidden">
+      <div id="pickText">Haritayı kaydırıp artıyı fidanın yerine getir</div>
+      <div class="row">
+        <button id="pickMe" class="btn ghost">📍 Konumum</button>
+        <button id="pickOk" class="btn">Burayı seç</button>
+        <button id="pickCancel" class="btn ghost">İptal</button>
+      </div>
+    </div>
+    <div id="mapTools" class="map-tools">
+      <button id="btnMe" class="btn ghost">📍 Konumum</button>
+      <button class="btn" data-add="tree">🌱 Fidan dik</button>
+    </div>
+    <div class="legend">
+      <span>🌳 sağlıklı</span><span>🥀 su bekliyor</span><span>📅 etkinlik</span><span>🪓 tehlikede</span>
+    </div>
+    <h3 class="section-title">Su bekleyen fidanlar</h3>
+    <div id="thirstyList" class="list"></div>
+  </section>
+
+  <!-- ETKİNLİK -->
+  <section id="tab-events" class="tab">
+    <button class="btn full" data-add="event">📅 Yeni dikim etkinliği aç</button>
+    <div id="eventList" class="list" style="margin-top:12px"></div>
+  </section>
+
+  <!-- KORU -->
+  <section id="tab-protect" class="tab">
+    <div class="card story">
+      <h3>🪓 Yürüyen Köşk görevi</h3>
+      <p>Atatürk bir dal kesilmesin diye köşkü taşıttı. Sen de mahallende kesilmek üzere olan, zarar gören ya da bakımsız kalan bir ağacı bildir. Topluluk desteğiyle ilgili kuruma (belediye, Orman Genel Müdürlüğü) birlikte başvuralım.</p>
+      <button class="btn full" data-add="report">Ağaç bildir</button>
+    </div>
+    <div id="reportList" class="list"></div>
+  </section>
+
+  <!-- PROFİL -->
+  <section id="tab-profile" class="tab">
+    <div class="card profile">
+      <div class="lvl-icon" id="pLevelIcon">🌱</div>
+      <input id="pName" class="name-input" placeholder="Adını yaz">
+      <div class="muted" id="pLevelName"></div>
+      <div class="progress"><div id="pBar"></div></div>
+      <div class="muted small" id="pNext"></div>
+      <div class="pstats">
+        <div><b id="pPlant">0</b><span>dikim</span></div>
+        <div><b id="pWater">0</b><span>sulama</span></div>
+        <div><b id="pJoin">0</b><span>etkinlik</span></div>
+        <div><b id="pProtect">0</b><span>koruma</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Rozetler</h3>
+      <div id="badges" class="badges"></div>
+    </div>
+
+    <div class="card">
+      <h3>Seviyeler</h3>
+      <div id="levels" class="levels"></div>
+    </div>
+
+    <div class="card story" id="stories">
+      <h3>Hikâyeler</h3>
+      <details open>
+        <summary>🏛️ Yürüyen Köşk ve Ulu Çınar (1930)</summary>
+        <p>Atatürk 1930 yazında Yalova'daki köşke geldiğinde çalışanlar, yandaki çınarın dalının çatıya zarar verdiğini söyleyip dalı kesmek için izin istedi. Atatürk dalın kesilmesine izin vermedi; köşk raylar üzerinde yaklaşık 4,8 metre kaydırıldı. Yapı o günden beri "Yürüyen Köşk" olarak anılıyor. Çınar 2015 raporuna göre yaklaşık 390 yaşında ve sağlıklı.</p>
+      </details>
+      <details>
+        <summary>🌾 Orman Çiftliği (1925)</summary>
+        <p>Atatürk 1925'te Ankara'nın yanı başındaki çorak, ağaçsız bir arazide çiftlik kurulması için çalışma başlattı. Bu çorak topraklar zamanla ağaçlık ve verimli bir alana dönüştü. Bugün Atatürk Orman Çiftliği olarak biliniyor.</p>
+      </details>
+      <details>
+        <summary>🌿 İğde ağacı</summary>
+        <p>Falih Rıfkı Atay'ın anlattığına göre, Orman Çiftliği'nde bir iğde ağacının kesilmesini öneren birine Atatürk şöyle cevap vermiş: <i>"Sen hayatında böyle bir ağaç yetiştirdin mi ki keseceksin?"</i></p>
+      </details>
+      <details>
+        <summary>📜 3116 sayılı Orman Kanunu (1937)</summary>
+        <p>Atatürk döneminde ormanları korumak ve geliştirmek için yasal düzenlemeler yapıldı. 1937'de çıkarılan 3116 sayılı Orman Kanunu bunların en önemlilerinden biridir.</p>
+      </details>
+      <p class="muted small">Kaynaklar: Atatürk Ansiklopedisi; Yalova Yürüyen Köşk Müzesi; Atatürk Araştırma Merkezi dergileri.</p>
+    </div>
+
+    <button id="resetDemo" class="btn ghost full">Örnek verileri konumuma göre yeniden oluştur</button>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button data-tab="home" class="active">🏠<span>Ana</span></button>
+  <button data-tab="map">🗺️<span>Orman</span></button>
+  <button data-tab="events">📅<span>Etkinlik</span></button>
+  <button data-tab="protect">🪓<span>Koru</span></button>
+  <button data-tab="profile">🏅<span>Ben</span></button>
+</nav>
+
+<!-- Form penceresi -->
+<div id="sheet" class="sheet hidden">
+  <form id="sheetForm" class="sheet-body"></form>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
