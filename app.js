@@ -73,7 +73,7 @@ function haritayiHazirla() {
 
 // "Konumum" butonu: haritayı kullanıcının bulunduğu yere götür
 $("#btnMe").addEventListener("click", function () {
-    if (harita === null) haritayiHazirla();   // harita yoksa önce oluştur
+if (harita === null) haritayiHazirla();   // harita yoksa önce oluştur
   navigator.geolocation.getCurrentPosition(
     function (konum) {
       const lat = konum.coords.latitude;
@@ -103,6 +103,10 @@ const veri = {
     this.fidanlar.push(fidan);
     this.kaydet();
   },
+  fidanSula: function(sira){
+    this.fidanlar[sira].sonSulama=Date.now();
+    this.kaydet();
+  },
 };
 
 // ============================================================
@@ -121,7 +125,7 @@ function fidanlariCiz() {
   if (harita === null) return;      // harita henüz yoksa çizme
   fidanKatmani.clearLayers();       // eski işaretleri temizle
 
-  veri.fidanlar.forEach(function (fidan) {
+  veri.fidanlar.forEach(function (fidan, sira) {
     const susuz = kacGunOldu(fidan.sonSulama) >= SUSUZ_GUN;
     const simge = susuz ? "🥀" : "🌳";
 
@@ -131,9 +135,11 @@ function fidanlariCiz() {
       .addTo(fidanKatmani)
       .bindPopup("<b>" + (fidan.isim || fidan.tur) + "</b><br>" +
                  fidan.tur + " · " + fidan.kim + " dikti<br>" +
-                 "Son sulama: " + kacGunOldu(fidan.sonSulama) + " gün önce");
+                 "Son sulama: " + kacGunOldu(fidan.sonSulama) + " gün önce<br>" +
+                 '<button class="btn small" onclick="sula(' + sira + ')">💧 Suladım</button>');
   });
 }
+
 
 // ============================================================
 // KÜÇÜK BİLDİRİM (ekranın altında 2,5 saniye görünen mesaj)
@@ -271,3 +277,9 @@ $("#sheetForm").addEventListener("submit", function (olay) {
     bildir("🌱 Fidanın ormana eklendi!");
   }
 });
+// Haritadaki "Suladım" butonu
+function sula(sira) {
+  veri.fidanSula(sira);
+ fidanlariCiz();
+ bildir("💧 Teşekkürler, fidan sulandı!");
+}
