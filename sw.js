@@ -1,7 +1,7 @@
 // Yeşil Vatan - Service Worker
 // Uygulama dosyalarını telefonda saklar; internet yokken de uygulama açılır.
 
-const ONBELLEK = "yesil-vatan-v1";
+const ONBELLEK = "yesil-vatan-v2";
 const DOSYALAR = [
   "./",
   "index.html",
