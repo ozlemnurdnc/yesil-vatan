@@ -806,3 +806,23 @@ $("#pName").addEventListener("change", function () {
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
+
+// GECE MODU
+// Temayı uygula: gece true ise koyu, false ise açık
+function temayiUygula(gece) {
+  document.documentElement.classList.toggle("gece", gece);
+  $("#temaBtn").textContent = gece ? "☀️" : "🌙";
+}
+
+// İlk açılış: daha önce seçim yaptıysa onu, yapmadıysa telefonun temasını kullan
+const kayitliTema = localStorage.getItem("tema");
+if (kayitliTema) {
+  temayiUygula(kayitliTema === "gece");
+} else {
+  temayiUygula(window.matchMedia("(prefers-color-scheme: dark)").matches);
+}
+$("#temaBtn").addEventListener("click", function () {
+  const gece = !document.documentElement.classList.contains("gece");   // şu anki temanın tersi
+  temayiUygula(gece);
+  localStorage.setItem("tema",gece ? "gece" : "gunduz");
+});
