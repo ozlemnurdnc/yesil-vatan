@@ -221,3 +221,7 @@ html.gece .field input, html.gece .field select, html.gece .field textarea { bac
 html.gece .legend span.secili, html.gece .levels .lv.cur { color: #86efac; }
 html.gece #map { filter: brightness(.85); }
 html.gece .tabbar button.active { color: #86efac; }
+/* Etkinlik detayı */
+.detay-satir { margin: 4px 0; font-size: 14px; }
+.btn.wa { background: #16a34a; }
+.item .body[onclick] { cursor: pointer; }

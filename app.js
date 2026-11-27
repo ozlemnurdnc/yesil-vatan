@@ -59,6 +59,7 @@ $("#splashGo").addEventListener("click", function () {
 let harita = null;                                  // harita bir kere oluşturulacak
 const BASLANGIC = { lat: 40.1426, lon: 29.9793 };   // Bilecik
 let fidanKatmani = null;
+let acikEtkinlikId = null;   // şu an detayı açık olan etkinlik
 function haritayiHazirla() {
   // Harita daha önce oluşturulmadıysa oluştur
   if (harita === null) {
@@ -420,7 +421,7 @@ function susuzListesiniGoster() {
     kutu.innerHTML +=
       '<div class="item">' +
         '<div class="thumb">🥀</div>' +
-        '<div class="body">' +
+          '<div class="body">' +
           '<div class="title">' + (fidan.isim || fidan.tur) + '</div>' +
           '<div class="sub">' + fidan.tur + ' · ' + fidan.kim + ' dikti · ' + gun + ' gündür susuz</div>' +
         '</div>' +
@@ -541,7 +542,7 @@ function etkinlikSatiri(etkinlik, sira) {
 
   return '<div class="item">' +
       '<div class="thumb">📅</div>' +
-      '<div class="body">' +
+        '<div class="body" onclick="etkinlikDetay(' + sira + ')">' +
         '<div class="title">' + etkinlik.baslik + '</div>' +
         '<div class="sub">' + tarihYaz(etkinlik.tarih) + '<br>' +
           etkinlik.yer + ' · ' + etkinlik.katilanlar.length + ' kişi katılıyor</div>' +
@@ -577,6 +578,12 @@ function etkinlikleriGoster() {
   yaklasanlar.slice(0, 3).forEach(function (x) { ilkUc += etkinlikSatiri(x.etkinlik, x.sira); });
   $("#homeEvents").innerHTML = ilkUc || '<div class="empty">Yaklaşan etkinlik yok. İlkini sen aç!</div>';
   fidanlariCiz();   // haritayı da güncelle
+  
+  // Detay penceresi açıksa onu da güncelle (örneğin "Katıl"a basınca "Katılıyorsun ✓" olsun)
+  if (acikEtkinlikId !== null && !$("#sheet").classList.contains("hidden")) {
+    const i = veri.etkinlikler.findIndex(function (e) { return e.id === acikEtkinlikId; });
+    if (i >= 0) etkinlikDetay(i);
+  }
 }
 
 // Sayfa açılınca etkinlikleri göster
@@ -826,3 +833,41 @@ $("#temaBtn").addEventListener("click", function () {
   temayiUygula(gece);
   localStorage.setItem("tema",gece ? "gece" : "gunduz");
 });
+
+// ETKİNLİK DETAYI
+
+
+function etkinlikDetay(sira) {
+  const e = veri.etkinlikler[sira];
+  const ad = localStorage.getItem("ad");
+  const katiliyor = e.katilanlar.includes(ad);
+  acikEtkinlikId = e.id;
+
+  // WhatsApp'ta gönderilecek hazır mesaj
+    const mesaj = "*" + e.baslik + "*\nTarih: " + tarihYaz(e.tarih) + "\nYer: " + e.yer +
+    "\n\nSen de gel, birlikte fidan dikelim! Yeşil Vatan'da katıl:\nhttps://ozlemnurdnc.github.io/yesil-vatan/";
+
+  const form = $("#sheetForm");
+  form.innerHTML =
+    '<h3>📅 ' + e.baslik + '</h3>' +
+    '<div class="detay-satir">🗓️ ' + tarihYaz(e.tarih) + '</div>' +
+    '<div class="detay-satir">📍 ' + e.yer + '</div>' +
+    '<div class="detay-satir">👤 Düzenleyen: ' + e.kim + '</div>' +
+    '<div class="detay-satir">🤝 ' + e.katilanlar.length + ' kişi katılıyor</div>' +
+    (katiliyor
+      ? '<button type="button" class="btn full done">Katılıyorsun ✓</button>'
+      : '<button type="button" class="btn full" onclick="katil(' + sira + ')">Katıl</button>') +
+    '<button type="button" class="btn ghost full" onclick="etkinligeGit(' + sira + ')">📍 Haritada göster</button>' +
+    '<a class="btn full wa" target="_blank" href="https://wa.me/?text=' + encodeURIComponent(mesaj) + '">💬 Arkadaşlarını çağır</a>' +
+    '<button type="button" class="btn ghost full" onclick="formuKapat()">Kapat</button>';
+
+  form.dataset.tur = "detay";
+  $("#sheet").classList.remove("hidden");
+}
+// "Haritada göster" butonu: haritayı etkinliğin yerine götür
+function etkinligeGit(sira) {
+  const etkinlik = veri.etkinlikler[sira];      
+  formuKapat();                                  
+  openTab("map");                             
+  harita.setView([etkinlik.lat, etkinlik.lon], 17);   
+}
