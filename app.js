@@ -94,21 +94,38 @@ if (harita === null) haritayiHazirla();   // harita yoksa önce oluştur
 // ============================================================
 const veri = {
   fidanlar: JSON.parse(localStorage.getItem("fidanlar") || "[]"),
+  etkinlikler: JSON.parse(localStorage.getItem("etkinlikler") || "[]"),
 
+  // Hem fidanları hem etkinlikleri kaydet
   kaydet: function () {
     localStorage.setItem("fidanlar", JSON.stringify(this.fidanlar));
+    localStorage.setItem("etkinlikler", JSON.stringify(this.etkinlikler));
   },
 
   fidanEkle: function (fidan) {
     this.fidanlar.push(fidan);
     this.kaydet();
   },
-  fidanSula: function(sira){
-    this.fidanlar[sira].sonSulama=Date.now();
+
+  fidanSula: function (sira) {
+    this.fidanlar[sira].sonSulama = Date.now();
     this.kaydet();
   },
-};
 
+  etkinlikEkle: function (etkinlik) {
+    this.etkinlikler.push(etkinlik);
+    this.kaydet();
+  },
+
+  // Bir kişiyi etkinliğe ekle (zaten katılıyorsa tekrar ekleme)
+  etkinligeKatil: function (sira, kisi) {
+    const katilanlar = this.etkinlikler[sira].katilanlar;
+    if (!katilanlar.includes(kisi)) {
+      katilanlar.push(kisi);
+      this.kaydet();
+    }
+  },
+};
 // ============================================================
 // FİDANLAR
 // ============================================================
@@ -239,8 +256,10 @@ $("#pickOk").addEventListener("click", function () {
   const tur = secimTuru;
   yerSecmeyiBitir();
 
-  if (tur === "tree") {
+    if (tur === "tree") {
     fidanFormunuAc(merkez.lat, merkez.lng);
+  } else if (tur === "event") {
+    etkinlikFormunuAc(merkez.lat, merkez.lng);
   } else {
     bildir("Bu özellik yakında geliyor 🙂");
   }
@@ -280,6 +299,22 @@ $("#sheetForm").addEventListener("submit", function (olay) {
     formuKapat();
     fidanlariCiz();
     bildir("🌱 Fidanın ormana eklendi!");
+    } else if (form.dataset.tur === "event") {
+    const kim = $("#eKim").value.trim();
+    localStorage.setItem("ad", kim);
+
+    veri.etkinlikEkle({
+      baslik: $("#eBaslik").value.trim(),
+      tarih: new Date($("#eTarih").value + "T10:00").getTime(),
+      yer: $("#eYer").value.trim(),
+      lat: Number(form.dataset.lat),
+      lon: Number(form.dataset.lon),
+      kim: kim,
+      katilanlar: [kim],
+    });
+
+    formuKapat();
+    bildir("📅 Etkinlik yayında!");
   }
 });
 // Haritadaki "Suladım" butonu
@@ -381,3 +416,30 @@ document.querySelectorAll("[data-filtre]").forEach(function (yazi) {
     fidanlariCiz();
   });
 });
+// ============================================================
+// ETKİNLİK AÇMA FORMU
+// ============================================================
+function etkinlikFormunuAc(lat, lon) {
+  const form = $("#sheetForm");
+
+  // Varsayılan tarih: yarın (YYYY-AA-GG biçiminde)
+  const yarin = new Date(Date.now() + GUN).toISOString().slice(0, 10);
+
+  form.innerHTML =
+    '<h3>📅 Dikim etkinliği aç</h3>' +
+    '<label class="field">Başlık <input id="eBaslik" required maxlength="60" placeholder="ör. Okul bahçesine 20 fidan"></label>' +
+    '<label class="field">Tarih <input id="eTarih" type="date" required value="' + yarin + '"></label>' +
+    '<label class="field">Buluşma yeri <input id="eYer" required maxlength="60" placeholder="ör. Park girişi"></label>' +
+    '<label class="field">Senin adın <input id="eKim" required maxlength="30"></label>' +
+    '<button class="btn full" type="submit">Etkinliği yayınla 📅</button>' +
+    '<button class="btn ghost full" type="button" id="eVazgec">Vazgeç</button>';
+
+  $("#eKim").value = localStorage.getItem("ad") || "";
+
+  form.dataset.tur = "event";
+  form.dataset.lat = lat;
+  form.dataset.lon = lon;
+
+  $("#eVazgec").addEventListener("click", formuKapat);
+  $("#sheet").classList.remove("hidden");
+}
