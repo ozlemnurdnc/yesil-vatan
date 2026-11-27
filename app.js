@@ -105,7 +105,7 @@ if (harita === null) haritayiHazirla();   // harita yoksa önce oluştur
 const veri = {
   fidanlar: [],       // Firebase'den gelen fidanlar burada tutulur
   etkinlikler: [],    // Firebase'den gelen etkinlikler burada tutulur
-
+  raporlar: [],       // Firebase'den gelen ağaç koruma bildirimleri
   // Yeni fidanı Firebase'e ekle
   fidanEkle: function (fidan) {
     db.collection("fidanlar").add(fidan);
@@ -129,6 +129,25 @@ const veri = {
       katilanlar: firebase.firestore.FieldValue.arrayUnion(kisi),
     });
   },
+  
+  // Yeni ağaç koruma bildirimi ekle
+  raporEkle: function (rapor) {
+    db.collection("raporlar").add(rapor);
+  },
+
+  // Bildirime destek ver (aynı kişi iki kez sayılmaz)
+  raporaDestekVer: function (sira, kisi) {
+    const id = this.raporlar[sira].id;
+    db.collection("raporlar").doc(id).update({
+      destekler: firebase.firestore.FieldValue.arrayUnion(kisi),
+    });
+  },
+
+  // Ağaç kurtarıldı olarak işaretle
+  korunduYap: function (sira) {
+    const id = this.raporlar[sira].id;
+    db.collection("raporlar").doc(id).update({ durum: "korundu" });
+  },
 };
 
 // Firebase'de fidanlar değişince (biri fidan dikince ya da sulayınca) otomatik güncelle
@@ -146,9 +165,16 @@ db.collection("etkinlikler").onSnapshot(function (sonuc) {
   });
   etkinlikleriGoster();
 });
-// ============================================================
+
+// Firebase'de bildirimler değişince otomatik güncelle
+db.collection("raporlar").onSnapshot(function (sonuc) {
+  veri.raporlar = sonuc.docs.map(function (belge) {
+    return Object.assign({ id: belge.id }, belge.data());
+  });
+  raporlariGoster();
+  fidanlariCiz();
+});
 // FİDANLAR
-// ============================================================
 const GUN = 24 * 60 * 60 * 1000;   // bir günün milisaniye karşılığı
 const SUSUZ_GUN = 7;               // 7 gün sulanmazsa "su bekliyor" sayılır
 
@@ -169,7 +195,7 @@ function fidanlariCiz() {
     
     if(filtre==="saglikli" && susuz) return;
 
-    if(filtre==="etkinlik") return;
+    if(filtre==="etkinlik"||filtre==="tehlike") return;
 
     const simge = susuz ? "🥀" : "🌳";
     L.marker([fidan.lat, fidan.lon], {
@@ -182,6 +208,7 @@ function fidanlariCiz() {
                  '<button class="btn small" onclick="sula(' + sira + ')">💧 Suladım</button>');
   });
   if(filtre==="hepsi"|| filtre==="etkinlik") etkinlikleriCiz();
+  if(filtre==="hepsi"|| filtre==="tehlike") raporlariCiz();
   susuzListesiniGoster();
 }
 
@@ -283,7 +310,9 @@ $("#pickOk").addEventListener("click", function () {
     fidanFormunuAc(merkez.lat, merkez.lng);
   } else if (tur === "event") {
     etkinlikFormunuAc(merkez.lat, merkez.lng);
-  } else {
+  } else if (tur === "report") {
+    raporFormunuAc(merkez.lat, merkez.lng);}
+  else {
     bildir("Bu özellik yakında geliyor 🙂");
   }
 });
@@ -339,6 +368,23 @@ $("#sheetForm").addEventListener("submit", function (olay) {
     formuKapat();
     etkinlikleriGoster();
     bildir("📅 Etkinlik yayında!");
+    } else if (form.dataset.tur === "report") {
+    const kim = $("#rKim").value.trim();
+    localStorage.setItem("ad", kim);
+
+    veri.raporEkle({
+      baslik: $("#rBaslik").value.trim(),
+      aciklama: $("#rAciklama").value.trim(),
+      kim: kim,
+      lat: Number(form.dataset.lat),
+      lon: Number(form.dataset.lon),
+      tarih: Date.now(),
+      destekler: [kim],
+      durum: "acik",
+    });
+
+    formuKapat();
+    bildir("🪓 Bildirimin yayında. Topluluktan destek toplanıyor!");
   }
 });
 // Haritadaki "Suladım" butonu
@@ -391,7 +437,6 @@ function fidanaGit(sira) {
 // ============================================================
 function anaSayfayiGuncelle() {
   // 1) Toplam fidan sayısı
-  // ↓↓↓ BU SATIRI SEN YAZACAKSIN ↓↓↓
   $("#statTrees").textContent = veri.fidanlar.length;
 
   // 2) Gönüllü sayısı: fidan diken farklı kişilerin sayısı
@@ -406,6 +451,13 @@ function anaSayfayiGuncelle() {
     if (kacGunOldu(fidan.sonSulama) >= SUSUZ_GUN) susuzSayisi++;
   });
   $("#statThirsty").textContent = susuzSayisi;
+   // 4) Korunan ağaç sayısı
+  let korunanSayisi = 0;
+  veri.raporlar.forEach(function (rapor) {
+    if (rapor.durum === "korundu") korunanSayisi++;
+  });
+  $("#statSaved").textContent=korunanSayisi;
+
 }
 
 // Ana sayfadaki "💧 Fidan sula" butonu: su bekleyenler listesine götür
@@ -543,5 +595,93 @@ function etkinlikleriCiz() {
                  tarihYaz(etkinlik.tarih) + "<br>" +
                  etkinlik.yer + " · " + etkinlik.katilanlar.length + " kişi katılıyor<br>" +
                  '<button class="btn small" onclick="katil(' + sira + ')">Katıl</button>');
+  });
+}
+// AĞAÇ KORUMA BİLDİRİM FORMU
+function raporFormunuAc(lat, lon) {
+  const form = $("#sheetForm");
+
+  form.innerHTML =
+    '<h3>🪓 Ağacı koru</h3>' +
+    '<p class="muted">Kesilmek üzere, zarar görmüş ya da bakımsız bir ağaç mı var?</p>' +
+    '<label class="field">Kısa başlık <input id="rBaslik" required maxlength="60" placeholder="ör. Yaşlı çınar kesilecek"></label>' +
+    '<label class="field">Açıklama <textarea id="rAciklama" rows="3" maxlength="300" placeholder="Ne oluyor? Ne yapılabilir?"></textarea></label>' +
+    '<label class="field">Senin adın <input id="rKim" required maxlength="30"></label>' +
+    '<button class="btn full red" type="submit">Bildir 🪓</button>' +
+    '<button class="btn ghost full" type="button" id="rVazgec">Vazgeç</button>';
+
+  $("#rKim").value = localStorage.getItem("ad") || "";
+
+  form.dataset.tur = "report";
+  form.dataset.lat = lat;
+  form.dataset.lon = lon;
+
+  $("#rVazgec").addEventListener("click", formuKapat);
+  $("#sheet").classList.remove("hidden");
+}
+// AĞAÇ KORUMA LİSTESİ
+function raporlariGoster() {
+  const ad = localStorage.getItem("ad");
+  let html = "";
+
+  // Açık bildirimler önce, korunanlar sonra gelsin
+  let liste = veri.raporlar.map(function (rapor, sira) { return { rapor: rapor, sira: sira }; });
+  liste.sort(function (a, b) {
+    if (a.rapor.durum !== b.rapor.durum) return a.rapor.durum === "acik" ? -1 : 1;
+    return b.rapor.destekler.length - a.rapor.destekler.length;   // en çok destek alan üstte
+  });
+
+  liste.forEach(function (x) {
+    const r = x.rapor;
+    const korundu = r.durum === "korundu";
+    const destekliyor = r.destekler.includes(ad);
+
+    let butonlar = "";
+    if (!korundu) {
+      butonlar =
+        (destekliyor
+          ? '<button class="btn small done">Destekliyorsun ✓</button>'
+          : '<button class="btn small" onclick="destekle(' + x.sira + ')">✊ Destekle</button>') +
+        '<button class="btn small ghost" onclick="korunduIsaretle(' + x.sira + ')">🏠 Korundu</button>';
+    }
+
+    html +=
+      '<div class="item">' +
+        '<div class="thumb">' + (korundu ? "🏠" : "🪓") + '</div>' +
+        '<div class="body">' +
+          '<div class="title">' + (korundu ? "✅ Korundu: " : "") + r.baslik + '</div>' +
+          '<div class="sub">' + (r.aciklama || "") + '<br>' +
+            r.kim + ' · ' + tarihYaz(r.tarih) + ' · <b>' + r.destekler.length + ' destek</b></div>' +
+        '</div>' +
+        '<div class="acts">' + butonlar + '</div>' +
+      '</div>';
+  });
+
+  $("#reportList").innerHTML = html || '<div class="empty">Henüz bildirim yok.</div>';
+}
+
+// "Korundu" butonu
+function korunduIsaretle(sira) {
+  veri.korunduYap(sira);
+  bildir("🏠 Harika! Bu ağaç korundu.");
+}
+function destekle(sira) {
+  const ad = localStorage.getItem("ad") || "Misafir";
+  veri.raporaDestekVer(sira,ad);
+  bildir("✊ Desteğin eklendi!");
+}
+// BİLDİRİMLERİ HARİTAYA ÇİZ
+function raporlariCiz() {
+  veri.raporlar.forEach(function (rapor, sira) {
+    if (rapor.durum === "korundu") return;   // korunan ağaçları çizme
+
+    L.marker([rapor.lat, rapor.lon], {
+      icon: L.divIcon({ className: "", html: '<div class="emoji-marker">🪓</div>', iconSize: [28, 28] }),
+    })
+      .addTo(fidanKatmani)
+      .bindPopup("<b>🪓 " + rapor.baslik + "</b><br>" +
+                 (rapor.aciklama || "") + "<br>" +
+                 rapor.destekler.length + " destek<br>" +
+                 '<button class="btn small" onclick="destekle(' + sira + ')">✊ Destekle</button>');
   });
 }

@@ -24,6 +24,17 @@ service cloud.firestore {
       allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['katilanlar']);
       allow delete: if false;
     }
+        // AĞAÇ KORUMA BİLDİRİMLERİ
+    match /raporlar/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['baslik', 'aciklama', 'kim', 'lat', 'lon', 'tarih', 'destekler', 'durum'])
+                    && request.resource.data.baslik is string
+                    && request.resource.data.baslik.size() > 0
+                    && request.resource.data.baslik.size() <= 60
+                    && request.resource.data.durum == 'acik';
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['destekler', 'durum']);
+      allow delete: if false;
+    }
 
     // Bunların dışındaki her şey kapalı
     match /{document=**} {
