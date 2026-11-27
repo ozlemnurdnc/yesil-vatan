@@ -138,6 +138,7 @@ function fidanlariCiz() {
                  "Son sulama: " + kacGunOldu(fidan.sonSulama) + " gün önce<br>" +
                  '<button class="btn small" onclick="sula(' + sira + ')">💧 Suladım</button>');
   });
+  susuzListesiniGoster();
 }
 
 
@@ -282,4 +283,43 @@ function sula(sira) {
   veri.fidanSula(sira);
  fidanlariCiz();
  bildir("💧 Teşekkürler, fidan sulandı!");
+}
+// ============================================================
+// SU BEKLEYEN FİDANLAR LİSTESİ
+// ============================================================
+function susuzListesiniGoster() {
+  const kutu = $("#thirstyList");
+  kutu.innerHTML = "";          // önce listeyi temizle
+  let bulundu = false;
+
+  veri.fidanlar.forEach(function (fidan, sira) {
+    const gun = kacGunOldu(fidan.sonSulama);
+    if (gun < SUSUZ_GUN) return;   // susuz değilse bu fidanı atla
+    bulundu = true;
+
+    kutu.innerHTML +=
+      '<div class="item">' +
+        '<div class="thumb">🥀</div>' +
+        '<div class="body">' +
+          '<div class="title">' + (fidan.isim || fidan.tur) + '</div>' +
+          '<div class="sub">' + fidan.tur + ' · ' + fidan.kim + ' dikti · ' + gun + ' gündür susuz</div>' +
+        '</div>' +
+        '<div class="acts">' +
+          '<button class="btn small" onclick="sula(' + sira + ')">💧 Suladım</button>' +
+          '<button class="btn small ghost" onclick="fidanaGit(' + sira + ')">Haritada</button>' +
+        '</div>' +
+      '</div>';
+  });
+
+  // Hiç susuz fidan yoksa güzel bir mesaj göster
+  if (!bulundu) {
+    kutu.innerHTML = '<div class="empty">🎉 Bütün fidanlar sulanmış!</div>';
+  }
+}
+
+// "Haritada" butonu: haritayı o fidana götür ve sayfanın en üstüne çık
+function fidanaGit(sira) {
+  const fidan = veri.fidanlar[sira];
+  harita.setView([fidan.lat, fidan.lon], 18);
+  window.scrollTo(0, 0);
 }
