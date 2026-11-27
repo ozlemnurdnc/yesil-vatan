@@ -122,6 +122,7 @@ function kacGunOldu(zaman) {
 
 // Bütün fidanları haritaya çiz
 function fidanlariCiz() {
+  anaSayfayiGuncelle();
   if (harita === null) return;      // harita henüz yoksa çizme
   fidanKatmani.clearLayers();       // eski işaretleri temizle
 
@@ -323,3 +324,35 @@ function fidanaGit(sira) {
   harita.setView([fidan.lat, fidan.lon], 18);
   window.scrollTo(0, 0);
 }
+// ============================================================
+// ANA SAYFA SAYILARI
+// ============================================================
+function anaSayfayiGuncelle() {
+  // 1) Toplam fidan sayısı
+  // ↓↓↓ BU SATIRI SEN YAZACAKSIN ↓↓↓
+  $("#statTrees").textContent = veri.fidanlar.length;
+
+  // 2) Gönüllü sayısı: fidan diken farklı kişilerin sayısı
+  //    (Set, aynı ismi iki kez saymayan bir liste)
+  const kisiler = new Set();
+  veri.fidanlar.forEach(function (fidan) { kisiler.add(fidan.kim); });
+  $("#statPeople").textContent = kisiler.size;
+
+  // 3) Su bekleyen fidan sayısı
+  let susuzSayisi = 0;
+  veri.fidanlar.forEach(function (fidan) {
+    if (kacGunOldu(fidan.sonSulama) >= SUSUZ_GUN) susuzSayisi++;
+  });
+  $("#statThirsty").textContent = susuzSayisi;
+}
+
+// Ana sayfadaki "💧 Fidan sula" butonu: su bekleyenler listesine götür
+$("[data-go]").addEventListener("click", function () {
+  openTab("map");
+  setTimeout(function () {
+    $("#thirstyList").scrollIntoView({ behavior: "smooth" });
+  }, 200);
+});
+
+// Sayfa açılınca sayıları bir kere hesapla
+anaSayfayiGuncelle();
