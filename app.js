@@ -148,8 +148,10 @@ function fidanlariCiz() {
     if(filtre==="susuz" && !susuz) return;
     
     if(filtre==="saglikli" && susuz) return;
-    const simge = susuz ? "🥀" : "🌳";
 
+    if(filtre==="etkinlik") return;
+    
+    const simge = susuz ? "🥀" : "🌳";
     L.marker([fidan.lat, fidan.lon], {
       icon: L.divIcon({ className: "", html: '<div class="emoji-marker">' + simge + "</div>", iconSize: [28, 28] }),
     })
@@ -159,6 +161,7 @@ function fidanlariCiz() {
                  "Son sulama: " + kacGunOldu(fidan.sonSulama) + " gün önce<br>" +
                  '<button class="btn small" onclick="sula(' + sira + ')">💧 Suladım</button>');
   });
+  if(filtre==="hepsi"|| filtre==="etkinlik") etkinlikleriCiz();
   susuzListesiniGoster();
 }
 
@@ -494,6 +497,7 @@ function etkinlikleriGoster() {
   let ilkUc = "";
   yaklasanlar.slice(0, 3).forEach(function (x) { ilkUc += etkinlikSatiri(x.etkinlik, x.sira); });
   $("#homeEvents").innerHTML = ilkUc || '<div class="empty">Yaklaşan etkinlik yok. İlkini sen aç!</div>';
+  fidanlariCiz();   // haritayı da güncelle
 }
 
 // Sayfa açılınca etkinlikleri göster
@@ -503,4 +507,21 @@ function katil(sira) {
   veri.etkinligeKatil(sira,ad);
   etkinlikleriGoster();
   bildir("🤝 Etkinliğe katıldın!");
+}
+// ============================================================
+// ETKİNLİKLERİ HARİTAYA ÇİZ
+// ============================================================
+function etkinlikleriCiz() {
+  veri.etkinlikler.forEach(function (etkinlik, sira) {
+    if (etkinlik.tarih < Date.now() - GUN) return;   // geçmiş etkinlikleri çizme
+
+    L.marker([etkinlik.lat, etkinlik.lon], {
+      icon: L.divIcon({ className: "", html: '<div class="emoji-marker">📅</div>', iconSize: [28, 28] }),
+    })
+      .addTo(fidanKatmani)
+      .bindPopup("<b>📅 " + etkinlik.baslik + "</b><br>" +
+                 tarihYaz(etkinlik.tarih) + "<br>" +
+                 etkinlik.yer + " · " + etkinlik.katilanlar.length + " kişi katılıyor<br>" +
+                 '<button class="btn small" onclick="katil(' + sira + ')">Katıl</button>');
+  });
 }
