@@ -190,6 +190,7 @@ const ROZETLER = [
   { simge: "✊", ad: "Ortak Ses",      aciklama: "5 bildirime destek ver",        kazandi: function (s) { return s.destek>=5; } },
   { simge: "🌾", ad: "Orman Çiftliği", aciklama: "Orman Çiftliği seviyesine ulaş", kazandi: function (s) { return s.puan >= 120; } },
   { simge: "🏛️", ad: "Ulu Çınar",      aciklama: "En yüksek seviyeye ulaş",       kazandi: function (s) { return s.puan>=300; } },
+  { simge: "🚂", ad: "Bilecik Görüşmesi", aciklama: "Bir etkinlik aç", kazandi: function (s) { return s.acilan>=1; } },
 ];
 
 // Fidan kaç gündür sulanmadı?
@@ -696,10 +697,13 @@ function raporlariCiz() {
 // Kullanıcının yaptıklarını gerçek verilerden say
 function sayaclariHesapla() {
   const ad = localStorage.getItem("ad");
-  const s = { dikim: 0, sulama: 0, etkinlik: 0, koruma: 0, destek: 0 };
+  const s = { dikim: 0, sulama: 0, etkinlik: 0, koruma: 0, destek: 0, acilan: 0 };
 
   veri.fidanlar.forEach(function (f) { if (f.kim === ad) s.dikim++; });
-  veri.etkinlikler.forEach(function (e) { if (e.katilanlar.includes(ad)) s.etkinlik++; });
+    veri.etkinlikler.forEach(function (e) {
+    if (e.katilanlar.includes(ad)) s.etkinlik++;   // katıldığı etkinlikler
+    if (e.kim === ad) s.acilan++;                  // kendi açtığı etkinlikler
+  });
   veri.raporlar.forEach(function (r) {
     if (r.kim === ad) s.koruma++;
     else if (r.destekler.includes(ad)) s.destek++;
