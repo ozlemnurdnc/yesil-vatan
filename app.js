@@ -801,3 +801,8 @@ $("#pName").addEventListener("change", function () {
   etkinlikleriGoster();
   raporlariGoster();
 });
+
+// TELEFONA KURULABİLİR UYGULAMA (service worker)
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
