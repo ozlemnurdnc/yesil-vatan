@@ -314,6 +314,7 @@ $("#sheetForm").addEventListener("submit", function (olay) {
     });
 
     formuKapat();
+    etkinlikleriGoster();
     bildir("📅 Etkinlik yayında!");
   }
 });
@@ -442,4 +443,64 @@ function etkinlikFormunuAc(lat, lon) {
 
   $("#eVazgec").addEventListener("click", formuKapat);
   $("#sheet").classList.remove("hidden");
+}
+// ============================================================
+// ETKİNLİK LİSTESİ
+// ============================================================
+// Tarihi "28 Kasım Cumartesi" gibi yazar
+function tarihYaz(zaman) {
+  return new Date(zaman).toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" });
+}
+
+// Bir etkinlik için liste satırı oluşturur
+function etkinlikSatiri(etkinlik, sira) {
+  const ad = localStorage.getItem("ad");
+  const katiliyor = etkinlik.katilanlar.includes(ad);
+
+  return '<div class="item">' +
+      '<div class="thumb">📅</div>' +
+      '<div class="body">' +
+        '<div class="title">' + etkinlik.baslik + '</div>' +
+        '<div class="sub">' + tarihYaz(etkinlik.tarih) + '<br>' +
+          etkinlik.yer + ' · ' + etkinlik.katilanlar.length + ' kişi katılıyor</div>' +
+      '</div>' +
+      '<div class="acts">' +
+        (katiliyor
+          ? '<button class="btn small done">Katılıyorsun ✓</button>'
+          : '<button class="btn small" onclick="katil(' + sira + ')">Katıl</button>') +
+      '</div>' +
+    '</div>';
+}
+
+// Etkinlik sekmesini ve ana sayfadaki listeyi doldurur
+function etkinlikleriGoster() {
+  // Her etkinliğin listedeki sırasını da yanında tut (Katıl butonu için lazım)
+  let yaklasanlar = [];
+  veri.etkinlikler.forEach(function (etkinlik, sira) {
+    if (etkinlik.tarih > Date.now() - GUN) {          // geçmiş etkinlikleri gösterme
+      yaklasanlar.push({ etkinlik: etkinlik, sira: sira });
+    }
+  });
+
+  // Tarihe göre sırala: en yakın etkinlik en üstte
+  yaklasanlar.sort(function (a, b) { return a.etkinlik.tarih - b.etkinlik.tarih; });
+
+  // Etkinlik sekmesi: hepsi
+  let hepsi = "";
+  yaklasanlar.forEach(function (x) { hepsi += etkinlikSatiri(x.etkinlik, x.sira); });
+  $("#eventList").innerHTML = hepsi || '<div class="empty">Yaklaşan etkinlik yok. İlkini sen aç!</div>';
+
+  // Ana sayfa: ilk 3 tanesi
+  let ilkUc = "";
+  yaklasanlar.slice(0, 3).forEach(function (x) { ilkUc += etkinlikSatiri(x.etkinlik, x.sira); });
+  $("#homeEvents").innerHTML = ilkUc || '<div class="empty">Yaklaşan etkinlik yok. İlkini sen aç!</div>';
+}
+
+// Sayfa açılınca etkinlikleri göster
+etkinlikleriGoster();
+function katil(sira) {
+  const ad = localStorage.getItem("ad") || "Misafir";
+  veri.etkinligeKatil(sira,ad);
+  etkinlikleriGoster();
+  bildir("🤝 Etkinliğe katıldın!");
 }
