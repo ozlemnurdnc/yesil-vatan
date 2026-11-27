@@ -101,45 +101,51 @@ if (harita === null) haritayiHazirla();   // harita yoksa önce oluştur
     }
   );
 });
-// ============================================================
 // VERİLER
-// Şimdilik telefonda (localStorage) saklanıyor.
-// Firebase'e geçince sadece bu bölüm değişecek.
-// ============================================================
 const veri = {
-  fidanlar: JSON.parse(localStorage.getItem("fidanlar") || "[]"),
-  etkinlikler: JSON.parse(localStorage.getItem("etkinlikler") || "[]"),
+  fidanlar: [],       // Firebase'den gelen fidanlar burada tutulur
+  etkinlikler: [],    // Firebase'den gelen etkinlikler burada tutulur
 
-  // Hem fidanları hem etkinlikleri kaydet
-  kaydet: function () {
-    localStorage.setItem("fidanlar", JSON.stringify(this.fidanlar));
-    localStorage.setItem("etkinlikler", JSON.stringify(this.etkinlikler));
-  },
-
+  // Yeni fidanı Firebase'e ekle
   fidanEkle: function (fidan) {
-    this.fidanlar.push(fidan);
-    this.kaydet();
+    db.collection("fidanlar").add(fidan);
   },
 
+  // Fidanın son sulama zamanını Firebase'de güncelle
   fidanSula: function (sira) {
-    this.fidanlar[sira].sonSulama = Date.now();
-    this.kaydet();
+    const id = this.fidanlar[sira].id;
+    db.collection("fidanlar").doc(id).update({ sonSulama: Date.now() });
   },
 
+  // Yeni etkinliği Firebase'e ekle
   etkinlikEkle: function (etkinlik) {
-    this.etkinlikler.push(etkinlik);
-    this.kaydet();
+    db.collection("etkinlikler").add(etkinlik);
   },
 
-  // Bir kişiyi etkinliğe ekle (zaten katılıyorsa tekrar ekleme)
+  // Kişiyi etkinliğin katılımcılarına ekle (zaten varsa tekrar eklemez)
   etkinligeKatil: function (sira, kisi) {
-    const katilanlar = this.etkinlikler[sira].katilanlar;
-    if (!katilanlar.includes(kisi)) {
-      katilanlar.push(kisi);
-      this.kaydet();
-    }
+    const id = this.etkinlikler[sira].id;
+    db.collection("etkinlikler").doc(id).update({
+      katilanlar: firebase.firestore.FieldValue.arrayUnion(kisi),
+    });
   },
 };
+
+// Firebase'de fidanlar değişince (biri fidan dikince ya da sulayınca) otomatik güncelle
+db.collection("fidanlar").onSnapshot(function (sonuc) {
+  veri.fidanlar = sonuc.docs.map(function (belge) {
+    return Object.assign({ id: belge.id }, belge.data());
+  });
+  fidanlariCiz();
+});
+
+// Firebase'de etkinlikler değişince otomatik güncelle
+db.collection("etkinlikler").onSnapshot(function (sonuc) {
+  veri.etkinlikler = sonuc.docs.map(function (belge) {
+    return Object.assign({ id: belge.id }, belge.data());
+  });
+  etkinlikleriGoster();
+});
 // ============================================================
 // FİDANLAR
 // ============================================================
