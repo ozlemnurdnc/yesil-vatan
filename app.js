@@ -128,6 +128,9 @@ function fidanlariCiz() {
 
   veri.fidanlar.forEach(function (fidan, sira) {
     const susuz = kacGunOldu(fidan.sonSulama) >= SUSUZ_GUN;
+    if(filtre==="susuz" && !susuz) return;
+    
+    if(filtre==="saglikli" && susuz) return;
     const simge = susuz ? "🥀" : "🌳";
 
     L.marker([fidan.lat, fidan.lon], {
@@ -356,3 +359,25 @@ $("[data-go]").addEventListener("click", function () {
 
 // Sayfa açılınca sayıları bir kere hesapla
 anaSayfayiGuncelle();
+// ============================================================
+// HARİTA FİLTRESİ (sağlıklı / su bekliyor)
+// ============================================================
+let filtre = "hepsi";   // "hepsi", "saglikli" ya da "susuz"
+
+document.querySelectorAll("[data-filtre]").forEach(function (yazi) {
+  yazi.addEventListener("click", function () {
+    // Seçili olana tekrar tıklandıysa filtreyi kaldır, değilse onu seç
+    if (filtre === yazi.dataset.filtre) {
+      filtre = "hepsi";
+    } else {
+      filtre = yazi.dataset.filtre;
+    }
+
+    // Seçili yazıyı yeşil yap, diğerlerini normal
+    document.querySelectorAll("[data-filtre]").forEach(function (y) {
+      y.classList.toggle("secili", y.dataset.filtre === filtre);
+    });
+
+    fidanlariCiz();
+  });
+});

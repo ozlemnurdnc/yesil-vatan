@@ -174,3 +174,5 @@ main { max-width: 560px; margin: 0 auto; padding: 14px; }
   background: #14281a; color: #fff; padding: 10px 16px; border-radius: 99px; font-size: 14px;
   max-width: 90%; text-align: center;
 }
+.legend span[data-filtre] { cursor: pointer; padding: 4px 8px; border-radius: 99px; border: 1px solid var(--line); }
+.legend span.secili { background: var(--green-light); color: var(--green); font-weight: 700; border-color: var(--green-2); }
