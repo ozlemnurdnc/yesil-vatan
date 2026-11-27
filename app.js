@@ -5,6 +5,20 @@
 const $ = (s) => document.querySelector(s);
 
 // ============================================================
+// FIREBASE BAĞLANTISI
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyACi-qwU70Pi-O2_M3wpv39LkbW3Yv0fq0",
+  authDomain: "yesil-vatan-d5a82.firebaseapp.com",
+  projectId: "yesil-vatan-d5a82",
+  storageBucket: "yesil-vatan-d5a82.firebasestorage.app",
+  messagingSenderId: "126882864615",
+  appId: "1:126882864615:web:a78c0a836aed565fba7142",
+};
+firebase.initializeApp(firebaseConfig);   // Firebase'i başlat
+const db = firebase.firestore();          // veritabanına bağlan
+
+// ============================================================
 // SEKMELER
 // ============================================================
 function openTab(isim) {
@@ -150,7 +164,7 @@ function fidanlariCiz() {
     if(filtre==="saglikli" && susuz) return;
 
     if(filtre==="etkinlik") return;
-    
+
     const simge = susuz ? "🥀" : "🌳";
     L.marker([fidan.lat, fidan.lon], {
       icon: L.divIcon({ className: "", html: '<div class="emoji-marker">' + simge + "</div>", iconSize: [28, 28] }),
