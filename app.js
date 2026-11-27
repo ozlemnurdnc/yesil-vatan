@@ -4,9 +4,8 @@
 // Kısayol: $("#id") ile bir elemanı seç
 const $ = (s) => document.querySelector(s);
 
-// ============================================================
+
 // FIREBASE BAĞLANTISI
-// ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyACi-qwU70Pi-O2_M3wpv39LkbW3Yv0fq0",
   authDomain: "yesil-vatan-d5a82.firebaseapp.com",
@@ -18,9 +17,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);   // Firebase'i başlat
 const db = firebase.firestore();          // veritabanına bağlan
 
-// ============================================================
+
 // SEKMELER
-// ============================================================
 function openTab(isim) {
   // 1) Bütün ekranları gizle, sadece seçileni göster
   document.querySelectorAll(".tab").forEach(function (ekran) {
@@ -46,9 +44,8 @@ document.querySelectorAll(".tabbar button").forEach(function (buton) {
 });
 
 
-// ============================================================
+
 // AÇILIŞ EKRANI
-// ============================================================
 $("#splashGo").addEventListener("click", function () {
   $("#splash").classList.add("fade");
 
@@ -57,9 +54,8 @@ $("#splashGo").addEventListener("click", function () {
   }, 500);
 });
 
-// ============================================================
+
 // HARİTA
-// ============================================================
 let harita = null;                                  // harita bir kere oluşturulacak
 const BASLANGIC = { lat: 40.1426, lon: 29.9793 };   // Bilecik
 let fidanKatmani = null;
@@ -178,6 +174,24 @@ db.collection("raporlar").onSnapshot(function (sonuc) {
 const GUN = 24 * 60 * 60 * 1000;   // bir günün milisaniye karşılığı
 const SUSUZ_GUN = 7;               // 7 gün sulanmazsa "su bekliyor" sayılır
 
+// PUANLAR VE SEVİYELER ("Ben" sekmesi)
+const SEVIYELER = [
+  { min: 0,   ad: "Fidan",          simge: "🌱", aciklama: "Yolculuk başlıyor" },
+  { min: 40,  ad: "Fidanlık",       simge: "🌿", aciklama: "Fidanların kök salıyor" },
+  { min: 120, ad: "Orman Çiftliği", simge: "🌳", aciklama: "Çorak toprağı yeşerten" },
+  { min: 300, ad: "Ulu Çınar",      simge: "🏛️", aciklama: "Yürüyen Köşk'ün çınarı gibi kalıcı" },
+];
+const ROZETLER = [
+  { simge: "🌱", ad: "İlk Fidan",      aciklama: "İlk fidanını dik",              kazandi: function (s) { return s.dikim >= 1; } },
+  { simge: "🌿", ad: "İğde",           aciklama: "5 fidan dik",                   kazandi: function (s) { return s.dikim >=5; } },
+  { simge: "💧", ad: "Can Suyu",       aciklama: "10 kez fidan sula",             kazandi: function (s) { return s.sulama>=10; } },
+  { simge: "🤝", ad: "İmececi",        aciklama: "3 etkinliğe katıl",             kazandi: function (s) { return s.etkinlik>=3; } },
+  { simge: "🏠", ad: "Yürüyen Köşk",   aciklama: "Bir ağacı korumak için bildir", kazandi: function (s) { return s.koruma>=1; } },
+  { simge: "✊", ad: "Ortak Ses",      aciklama: "5 bildirime destek ver",        kazandi: function (s) { return s.destek>=5; } },
+  { simge: "🌾", ad: "Orman Çiftliği", aciklama: "Orman Çiftliği seviyesine ulaş", kazandi: function (s) { return s.puan >= 120; } },
+  { simge: "🏛️", ad: "Ulu Çınar",      aciklama: "En yüksek seviyeye ulaş",       kazandi: function (s) { return s.puan>=300; } },
+];
+
 // Fidan kaç gündür sulanmadı?
 function kacGunOldu(zaman) {
   return Math.floor((Date.now() - zaman) / GUN);
@@ -186,6 +200,7 @@ function kacGunOldu(zaman) {
 // Bütün fidanları haritaya çiz
 function fidanlariCiz() {
   anaSayfayiGuncelle();
+  profiliGoster();
   if (harita === null) return;      // harita henüz yoksa çizme
   fidanKatmani.clearLayers();       // eski işaretleri temizle
 
@@ -213,17 +228,15 @@ function fidanlariCiz() {
 }
 
 
-// ============================================================
-// KÜÇÜK BİLDİRİM (ekranın altında 2,5 saniye görünen mesaj)
-// ============================================================
+
+// KÜÇÜK BİLDİRİM
 function bildir(mesaj) {
   $("#toast").textContent = mesaj;
   $("#toast").classList.remove("hidden");
   setTimeout(function () { $("#toast").classList.add("hidden"); }, 2500);
 }
-// ============================================================
+
 // HARİTADAN YER SEÇME
-// ============================================================
 let secimTuru = null;   // ne için yer seçiliyor: "tree", "event" ya da "report"
 
 // "Fidan dik", "Etkinlik aç", "Ağacı koru" butonlarının hepsi buraya gelir
@@ -253,9 +266,8 @@ function yerSecmeyiBitir() {
 // "İptal" butonu
 $("#pickCancel").addEventListener("click", yerSecmeyiBitir);
 
-// ============================================================
+
 // FİDAN DİKME FORMU
-// ============================================================
 const TURLER = ["Çınar", "Meşe", "Ihlamur", "Kızılçam", "Sedir", "Akasya", "İğde", "Zeytin", "Erik", "Dut", "Diğer"];
 
 // Formu aç (lat, lon: fidanın dikileceği yer)
@@ -296,10 +308,8 @@ function fidanFormunuAc(lat, lon) {
 function formuKapat() {
   $("#sheet").classList.add("hidden");
 }
-// ============================================================
-// BUTONLARI BAĞLA
-// ============================================================
 
+// BUTONLARI BAĞLA
 // "Burayı seç": haritanın tam ortasındaki noktayı al ve formu aç
 $("#pickOk").addEventListener("click", function () {
   const merkez = harita.getCenter();
@@ -390,12 +400,12 @@ $("#sheetForm").addEventListener("submit", function (olay) {
 // Haritadaki "Suladım" butonu
 function sula(sira) {
   veri.fidanSula(sira);
+  localStorage.setItem("sulamaSayisi", Number(localStorage.getItem("sulamaSayisi") || 0) + 1);
  fidanlariCiz();
  bildir("💧 Teşekkürler, fidan sulandı!");
 }
-// ============================================================
+
 // SU BEKLEYEN FİDANLAR LİSTESİ
-// ============================================================
 function susuzListesiniGoster() {
   const kutu = $("#thirstyList");
   kutu.innerHTML = "";          // önce listeyi temizle
@@ -432,9 +442,8 @@ function fidanaGit(sira) {
   harita.setView([fidan.lat, fidan.lon], 18);
   window.scrollTo(0, 0);
 }
-// ============================================================
+
 // ANA SAYFA SAYILARI
-// ============================================================
 function anaSayfayiGuncelle() {
   // 1) Toplam fidan sayısı
   $("#statTrees").textContent = veri.fidanlar.length;
@@ -470,9 +479,8 @@ $("[data-go]").addEventListener("click", function () {
 
 // Sayfa açılınca sayıları bir kere hesapla
 anaSayfayiGuncelle();
-// ============================================================
+
 // HARİTA FİLTRESİ (sağlıklı / su bekliyor)
-// ============================================================
 let filtre = "hepsi";   // "hepsi", "saglikli" ya da "susuz"
 
 document.querySelectorAll("[data-filtre]").forEach(function (yazi) {
@@ -492,9 +500,8 @@ document.querySelectorAll("[data-filtre]").forEach(function (yazi) {
     fidanlariCiz();
   });
 });
-// ============================================================
+
 // ETKİNLİK AÇMA FORMU
-// ============================================================
 function etkinlikFormunuAc(lat, lon) {
   const form = $("#sheetForm");
 
@@ -519,9 +526,8 @@ function etkinlikFormunuAc(lat, lon) {
   $("#eVazgec").addEventListener("click", formuKapat);
   $("#sheet").classList.remove("hidden");
 }
-// ============================================================
+
 // ETKİNLİK LİSTESİ
-// ============================================================
 // Tarihi "28 Kasım Cumartesi" gibi yazar
 function tarihYaz(zaman) {
   return new Date(zaman).toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" });
@@ -580,9 +586,8 @@ function katil(sira) {
   etkinlikleriGoster();
   bildir("🤝 Etkinliğe katıldın!");
 }
-// ============================================================
+
 // ETKİNLİKLERİ HARİTAYA ÇİZ
-// ============================================================
 function etkinlikleriCiz() {
   veri.etkinlikler.forEach(function (etkinlik, sira) {
     if (etkinlik.tarih < Date.now() - GUN) return;   // geçmiş etkinlikleri çizme
@@ -685,3 +690,110 @@ function raporlariCiz() {
                  '<button class="btn small" onclick="destekle(' + sira + ')">✊ Destekle</button>');
   });
 }
+
+
+
+// Kullanıcının yaptıklarını gerçek verilerden say
+function sayaclariHesapla() {
+  const ad = localStorage.getItem("ad");
+  const s = { dikim: 0, sulama: 0, etkinlik: 0, koruma: 0, destek: 0 };
+
+  veri.fidanlar.forEach(function (f) { if (f.kim === ad) s.dikim++; });
+  veri.etkinlikler.forEach(function (e) { if (e.katilanlar.includes(ad)) s.etkinlik++; });
+  veri.raporlar.forEach(function (r) {
+    if (r.kim === ad) s.koruma++;
+    else if (r.destekler.includes(ad)) s.destek++;
+  });
+  s.sulama = Number(localStorage.getItem("sulamaSayisi") || 0);   // sulamalar bu telefonda sayılıyor
+
+  s.puan = s.dikim * 10 + s.koruma * 8 + s.etkinlik * 5 + s.sulama * 2 + s.destek * 1;
+  return s;
+}
+
+// Puana göre hangi seviyede olduğunu bul
+function seviyeBul(puan) {
+  let seviye = SEVIYELER[0];
+  SEVIYELER.forEach(function (x) { if (puan >= x.min) seviye = x; });
+  return seviye;
+}
+
+// "Ben" sekmesini ve üstteki seviye kutusunu doldur
+function profiliGoster() {
+  const s = sayaclariHesapla();
+  const seviye = seviyeBul(s.puan);
+  const sonraki = SEVIYELER[SEVIYELER.indexOf(seviye) + 1];
+
+  // Üst çubuktaki küçük kutu
+  $("#levelChip").textContent = seviye.simge + " " + seviye.ad + " · " + s.puan + " puan";
+
+  // Büyük simge, seviye adı, ilerleme çubuğu
+  $("#pLevelIcon").textContent = seviye.simge;
+  $("#pLevelName").textContent = seviye.ad + " · " + s.puan + " puan";
+  if (sonraki) {
+    const yuzde = (s.puan - seviye.min) / (sonraki.min - seviye.min) * 100;
+    $("#pBar").style.width = yuzde + "%";
+    $("#pNext").textContent = sonraki.simge + " " + sonraki.ad + " seviyesine " + (sonraki.min - s.puan) + " puan kaldı";
+  } else {
+    $("#pBar").style.width = "100%";
+    $("#pNext").textContent = "En yüksek seviyedesin. Ulu Çınar gibi köklüsün! 🏛️";
+  }
+
+  // Sayılar
+  $("#pPlant").textContent = s.dikim;
+  $("#pWater").textContent = s.sulama;
+  $("#pJoin").textContent = s.etkinlik;
+  $("#pProtect").textContent = s.koruma;
+
+  // Seviyeler listesi (bulunduğun seviye kalın)
+  let html = "";
+  SEVIYELER.forEach(function (x) {
+    html += '<div class="lv' + (x === seviye ? " cur" : "") + '">' +
+              '<span class="ic">' + x.simge + '</span>' +
+              '<span><b>' + x.ad + '</b> · ' + x.min + '+ puan<br><small class="muted">' + x.aciklama + '</small></span>' +
+            '</div>';
+  });
+  $("#levels").innerHTML = html;
+
+  // İsim kutusu (yazarken üzerine yazmasın diye kontrol ediyoruz)
+  if (document.activeElement !== $("#pName")) $("#pName").value = localStorage.getItem("ad") || "";
+  
+  // Rozetler: kazanılanlar renkli, kazanılmayanlar soluk
+  let rozetHtml = "";
+  ROZETLER.forEach(function (r) {
+    const kazandi = r.kazandi(s);
+    rozetHtml += '<div class="badge' + (kazandi ? "" : " locked") + '">' +
+                   '<div class="ic">' + r.simge + '</div>' +
+                   '<div class="nm">' + r.ad + '</div>' +
+                   '<div class="ds">' + r.aciklama + '</div>' +
+                 '</div>';
+  });
+  $("#badges").innerHTML = rozetHtml;
+  
+  // Yeni seviyeye çıktıysa kutla (sadece daha yükseğe çıkınca)
+  const seviyeSirasi = SEVIYELER.indexOf(seviye);
+  const enYuksek = Number(localStorage.getItem("enYuksekSeviye") || 0);
+  if (seviyeSirasi > enYuksek) {
+    bildir("🎉 Yeni seviye: " + seviye.simge + " " + seviye.ad + "!");
+    localStorage.setItem("enYuksekSeviye", seviyeSirasi);
+  }
+
+  // Yeni rozet kazandıysa kutla (daha önce kazandıklarını tekrar kutlama)
+  const eskiRozetler = JSON.parse(localStorage.getItem("kazanilanRozetler") || "[]");
+  ROZETLER.forEach(function (r) {
+    if (r.kazandi(s) && !eskiRozetler.includes(r.ad)) {
+      eskiRozetler.push(r.ad);
+      bildir("🏅 Yeni rozet: " + r.simge + " " + r.ad + "!");
+    }
+  });
+  localStorage.setItem("kazanilanRozetler", JSON.stringify(eskiRozetler));
+}
+
+// İsim kutusuna yeni bir ad yazılınca
+$("#pName").addEventListener("change", function () {
+  const yeniAd = $("#pName").value.trim();
+  localStorage.setItem("ad", yeniAd);
+  bildir("Merhaba " + yeniAd + " 🌱");
+  profiliGoster();
+  etkinlikleriGoster();
+  raporlariGoster();
+});
