@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // FİDANLAR
+    match /fidanlar/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['lat', 'lon', 'tur', 'kim', 'dikildi', 'sonSulama'])
+                    && request.resource.data.tur is string
+                    && request.resource.data.kim is string
+                    && request.resource.data.kim.size() > 0
+                    && request.resource.data.kim.size() <= 30;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sonSulama']);
+      allow delete: if false;
+    }
+
+    // ETKİNLİKLER
+    match /etkinlikler/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['baslik', 'tarih', 'yer', 'lat', 'lon', 'kim', 'katilanlar'])
+                    && request.resource.data.baslik is string
+                    && request.resource.data.baslik.size() > 0
+                    && request.resource.data.baslik.size() <= 60;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['katilanlar']);
+      allow delete: if false;
+    }
+
+    // Bunların dışındaki her şey kapalı
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
